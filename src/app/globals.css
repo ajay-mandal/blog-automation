@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,83 +48,182 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   NAVY GLASS DESIGN SYSTEM — 3-Color Rule
+   ─────────────────────────────────────────────────────────────────
+   Color 1: Navy  — #0A1628 → #163568  (backgrounds & surfaces)
+   Color 2: Blue  — #3B82F6             (primary accent & CTAs)
+   Color 3: White — rgba(255,255,255)   (text, borders, glass)
+═══════════════════════════════════════════════════════════════════ */
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Backgrounds */
+  --background: oklch(0.115 0.04 252); /* #0A1628 deep navy */
+  --foreground: oklch(0.93 0.022 252); /* #E2E8F8 cool white */
+
+  /* Cards — glass surface */
+  --card: oklch(1 0 0 / 5%); /* white 5% — glass */
+  --card-foreground: oklch(0.93 0.022 252);
+
+  /* Popovers — slightly more opaque */
+  --popover: oklch(0.145 0.055 252); /* #0D1F38 elevated navy */
+  --popover-foreground: oklch(0.93 0.022 252);
+
+  /* Primary — electric blue */
+  --primary: oklch(0.62 0.21 255); /* #3B82F6 */
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary — navy mid */
+  --secondary: oklch(0.175 0.065 252); /* #0F2A4E */
+  --secondary-foreground: oklch(0.93 0.022 252);
+
+  /* Muted */
+  --muted: oklch(0.175 0.065 252);
+  --muted-foreground: oklch(0.65 0.07 252); /* #8BA3CC blue-gray */
+
+  /* Accent hover state */
+  --accent: oklch(1 0 0 / 7%);
+  --accent-foreground: oklch(0.93 0.022 252);
+
+  /* Destructive */
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Borders & Inputs — glass edges */
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 8%);
+  --ring: oklch(0.62 0.21 255);
+
+  /* Radius — sharp Apple-style 8px */
+  --radius: 0.5rem;
+
+  /* Charts */
+  --chart-1: oklch(0.62 0.21 255);
+  --chart-2: oklch(0.72 0.18 210);
+  --chart-3: oklch(0.55 0.15 280);
+  --chart-4: oklch(0.68 0.12 190);
+  --chart-5: oklch(0.48 0.17 255);
+
+  /* Sidebar — darkest navy */
+  --sidebar: oklch(0.09 0.038 252); /* #081220 */
+  --sidebar-foreground: oklch(0.93 0.022 252);
+  --sidebar-primary: oklch(0.62 0.21 255);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(1 0 0 / 7%);
+  --sidebar-accent-foreground: oklch(0.93 0.022 252);
+  --sidebar-border: oklch(1 0 0 / 6%);
+  --sidebar-ring: oklch(0.62 0.21 255);
 }
 
+/* Force same theme — this app is always dark navy */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.115 0.04 252);
+  --foreground: oklch(0.93 0.022 252);
+  --card: oklch(1 0 0 / 5%);
+  --card-foreground: oklch(0.93 0.022 252);
+  --popover: oklch(0.145 0.055 252);
+  --popover-foreground: oklch(0.93 0.022 252);
+  --primary: oklch(0.62 0.21 255);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.175 0.065 252);
+  --secondary-foreground: oklch(0.93 0.022 252);
+  --muted: oklch(0.175 0.065 252);
+  --muted-foreground: oklch(0.65 0.07 252);
+  --accent: oklch(1 0 0 / 7%);
+  --accent-foreground: oklch(0.93 0.022 252);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 8%);
+  --ring: oklch(0.62 0.21 255);
+  --chart-1: oklch(0.62 0.21 255);
+  --chart-2: oklch(0.72 0.18 210);
+  --chart-3: oklch(0.55 0.15 280);
+  --chart-4: oklch(0.68 0.12 190);
+  --chart-5: oklch(0.48 0.17 255);
+  --sidebar: oklch(0.09 0.038 252);
+  --sidebar-foreground: oklch(0.93 0.022 252);
+  --sidebar-primary: oklch(0.62 0.21 255);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(1 0 0 / 7%);
+  --sidebar-accent-foreground: oklch(0.93 0.022 252);
+  --sidebar-border: oklch(1 0 0 / 6%);
+  --sidebar-ring: oklch(0.62 0.21 255);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Deep navy gradient with two subtle color blobs — glass needs something to blur against */
+    background-color: #0a1628;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% 40%, rgba(30, 64, 175, 0.25) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 85% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse 50% 70% at 70% 80%, rgba(14, 36, 89, 0.4) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* ─── Apple Glass Utility Classes ──────────────────────────────────────────── */
+@layer utilities {
+  /* Standard glass card */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Stronger glass (modals, dropdowns) */
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Sidebar glass */
+  .glass-sidebar {
+    background: rgba(8, 18, 32, 0.85);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Active nav glow */
+  .nav-active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  /* Blue primary glow for buttons */
+  .glow-blue {
+    box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Subtle text gradient for headings */
+  .text-gradient-blue {
+    background: linear-gradient(135deg, #e2e8f8 0%, #93c5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Page header section */
+  .page-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(10, 22, 40, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 }

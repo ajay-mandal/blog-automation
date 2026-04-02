@@ -1,11 +1,8 @@
-import Link from "next/link"
 import { logoutAction } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Rss, Newspaper, Bot, FileText, Settings, LayoutDashboard, LogOut } from "lucide-react"
+import { NavItem } from "@/components/nav-item"
+import { Bot, FileText, LogOut, Newspaper, Rss, Settings } from "lucide-react"
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sources", label: "Sources", icon: Rss },
   { href: "/feed", label: "Feed", icon: Newspaper },
   { href: "/blogs", label: "Blogs", icon: FileText },
@@ -14,51 +11,46 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className="flex w-56 shrink-0 flex-col border-r bg-sidebar">
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          <Bot className="size-5 shrink-0" />
-          <span className="truncate text-sm font-semibold">Blog Automation</span>
+      {/* Sidebar — glass-sidebar */}
+      <aside className="glass-sidebar relative flex w-[220px] shrink-0 flex-col">
+        {/* Logo */}
+        <div className="flex h-14 items-center gap-2.5 px-4">
+          <div className="flex size-7 items-center justify-center rounded-md bg-[#3b82f6]/20 ring-1 ring-[#3b82f6]/30">
+            <Bot className="size-4 text-[#60a5fa]" />
+          </div>
+          <span className="text-sm font-semibold tracking-[-0.01em] text-[#e2e8f8]">
+            Blog Automation
+          </span>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <Icon className="size-4 shrink-0" />
-              {label}
-            </Link>
+        {/* Divider */}
+        <div className="mx-3 h-px bg-white/[0.06]" />
+
+        {/* Nav */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
+          {NAV_ITEMS.map((item) => (
+            <NavItem key={item.href} {...item} />
           ))}
         </nav>
 
-        <div className="space-y-1 border-t p-2">
-          <Link
-            href="/settings"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <Settings className="size-4 shrink-0" />
-            Settings
-          </Link>
-          <Separator className="my-1" />
+        {/* Bottom section */}
+        <div className="mx-3 h-px bg-white/[0.06]" />
+        <div className="space-y-0.5 px-2 py-3">
+          <NavItem href="/settings" label="Settings" icon={Settings} />
           <form action={logoutAction}>
-            <Button
+            <button
               type="submit"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-3 text-muted-foreground"
+              className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-[#8ba3cc] transition-all duration-150 hover:bg-white/[0.06] hover:text-[#e2e8f8]"
             >
               <LogOut className="size-4 shrink-0" />
               Sign out
-            </Button>
+            </button>
           </form>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      {/* Main content area */}
+      <main className="flex flex-1 flex-col overflow-y-auto">{children}</main>
     </div>
   )
 }
