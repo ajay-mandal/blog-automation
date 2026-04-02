@@ -1,24 +1,21 @@
 // 'use client' — this page needs form state and toast feedback
-"use client";
+"use client"
 
-import { useActionState } from "react";
-import { loginAction } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ActionResult } from "@/types";
+import { useActionState } from "react"
+import { loginAction } from "@/lib/auth"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import type { ActionResult } from "@/types"
 
-const initialState: ActionResult = { success: true, data: undefined };
+const initialState: ActionResult = { success: true, data: undefined }
 
 export default function LoginPage() {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(
-    loginAction,
-    initialState
-  );
+  const [state, action, pending] = useActionState<ActionResult, FormData>(loginAction, initialState)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Blog Automation</CardTitle>
@@ -38,9 +35,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
               />
             </div>
-            {!state.success && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
+            {!state.success && <p className="text-sm text-destructive">{state.error}</p>}
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Signing in…" : "Sign in"}
             </Button>
@@ -48,5 +43,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

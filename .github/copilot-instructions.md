@@ -85,10 +85,10 @@ src/
 
 ```typescript
 // Good
-const result = (await action()) satisfies { success: boolean; error?: string };
+const result = (await action()) satisfies { success: boolean; error?: string }
 
 // Bad
-const result: any = await action();
+const result: any = await action()
 ```
 
 ### React / Next.js
@@ -109,10 +109,10 @@ const result: any = await action();
 ```typescript
 // Route handler pattern
 export async function POST(req: Request) {
-  const body = await req.json();
-  const parsed = GenerateSchema.safeParse(body);
+  const body = await req.json()
+  const parsed = GenerateSchema.safeParse(body)
   if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 })
   }
   // ...
 }

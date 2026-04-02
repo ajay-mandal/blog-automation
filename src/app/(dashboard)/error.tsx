@@ -1,27 +1,27 @@
 // 'use client' — error.tsx must be a Client Component
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
 
 export default function Error({
   error,
   reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
   useEffect(() => {
-    console.error(error);
-  }, [error]);
+    console.error(error)
+  }, [error])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-6">
+    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-6">
       <h2 className="text-xl font-semibold">Something went wrong</h2>
       <p className="text-sm text-muted-foreground">An unexpected error occurred.</p>
       <Button variant="outline" onClick={reset}>
         Try again
       </Button>
     </div>
-  );
+  )
 }

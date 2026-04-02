@@ -1,0 +1,9 @@
+# Prettier ignore — files that should not be auto-formatted
+.next/
+node_modules/
+prisma/migrations/
+src/generated/
+public/
+package-lock.json
+pnpm-lock.yaml
+*.svg
