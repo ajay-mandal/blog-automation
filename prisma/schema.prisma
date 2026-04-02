@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── RSS Sources ─────────────────────────────────────────────────────────────
+
+model Source {
+  id            String    @id @default(cuid())
+  name          String
+  url           String    @unique // RSS feed URL
+  siteUrl       String?
+  category      String?
+  active        Boolean   @default(true)
+  lastFetchedAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  articles Article[]
+
+  @@map("sources")
+}
+
+// ─── Fetched Articles ─────────────────────────────────────────────────────────
+
+model Article {
+  id          String    @id @default(cuid())
+  sourceId    String
+  title       String
+  url         String    @unique
+  summary     String?
+  author      String?
+  publishedAt DateTime?
+  fetchedAt   DateTime  @default(now())
+  /// new | selected | generated | published | ignored
+  status      String    @default("new")
+
+  source         Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  generatedBlogs GeneratedBlog[]
+
+  @@map("articles")
+}
+
+// ─── Generated Blog Versions ─────────────────────────────────────────────────
+
+model GeneratedBlog {
+  id            String    @id @default(cuid())
+  articleId     String
+  version       Int
+  title         String
+  slug          String
+  contentMd     String?   @db.Text
+  contentHtml   String?   @db.Text
+  excerpt       String?
+  tags          String[]
+  /// project | findings
+  category      String    @default("findings")
+  coverImageUrl String?
+  aiModel       String
+  /// draft | reviewed | published
+  status        String    @default("draft")
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("generated_blogs")
+}
+
+// ─── Encrypted API Keys ───────────────────────────────────────────────────────
+
+model ApiKey {
+  id       String @id @default(cuid())
+  /// openai | anthropic | google | unsplash | pexels
+  provider String @unique
+  keyEnc   String // AES-256-GCM encrypted
+
+  @@map("api_keys")
+}
+
+// ─── App Settings ─────────────────────────────────────────────────────────────
+
+model Setting {
+  key   String @id
+  value String @db.Text
+
+  @@map("settings")
+}
