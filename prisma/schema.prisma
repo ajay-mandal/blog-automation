@@ -70,17 +70,6 @@ model GeneratedBlog {
   @@map("generated_blogs")
 }
 
-// ─── Encrypted API Keys ───────────────────────────────────────────────────────
-
-model ApiKey {
-  id       String @id @default(cuid())
-  /// openai | anthropic | google | unsplash | pexels
-  provider String @unique
-  keyEnc   String // AES-256-GCM encrypted
-
-  @@map("api_keys")
-}
-
 // ─── App Settings ─────────────────────────────────────────────────────────────
 
 model Setting {

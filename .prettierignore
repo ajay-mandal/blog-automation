@@ -1,6 +1,7 @@
 # Prettier ignore — files that should not be auto-formatted
 .next/
 node_modules/
+.agents/
 prisma/migrations/
 src/generated/
 public/

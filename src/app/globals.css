@@ -226,4 +226,29 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  /* ─── Chat Message Animations (Copilot style) ─────────────────────────────── */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Staggered animation delays for typing indicator */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
 }

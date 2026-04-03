@@ -4,7 +4,7 @@
 
 Personal full-stack blog automation tool. Watches RSS feeds, generates AI blog posts (2–3 versions), edits in a rich editor, and publishes directly to **ajaymandal.com** via Supabase upsert.
 
-**Owner:** Ajay Mandal  
+**Owner:** Ajay Mandal
 **Portfolio:** Next.js 15 + Supabase PostgreSQL at `ajaymandal.com`
 
 ---
@@ -62,8 +62,7 @@ src/
     publisher/              # Publish flow components
   lib/
     supabase.ts             # App Supabase client (Prisma handles schema)
-    portfolio-supabase.ts   # Portfolio Supabase client (service role)
-    crypto.ts               # AES-256 encrypt/decrypt for stored API keys
+    portfolio-supabase.ts   # Portfolio Supabase client (reads PORTFOLIO_SUPABASE_* env vars)
     markdown.ts             # marked + shiki pipeline (mirrors portfolio)
     ai-models.ts            # Model registry for all providers
   prisma/
@@ -127,8 +126,7 @@ export async function POST(req: Request) {
 
 ### Security (non-negotiable)
 
-- **API keys** are AES-256 encrypted before `INSERT` into `api_keys` table. Decrypted only in server-side route handlers. Never in client components, never in API responses.
-- **Portfolio service role key** is stored encrypted in the `settings` table — same treatment.
+- **All API keys** (OpenAI, Anthropic, Google, Unsplash, Pexels, portfolio Supabase) are stored as environment variables in `.env.local` only — never in the database, never returned in API responses, never accessed from client components.
 - All image proxy endpoints (`/api/images/search`) must never echo the third-party API key in the response.
 - `DOMPurify` on any HTML before rendering in a client component or storing in DB.
 - The password auth middleware must run on all routes under `/(dashboard)/`. Never trust client-side auth state for protection.
@@ -190,11 +188,17 @@ published_at (timestamptz), created_at, updated_at
 
 ---
 
+## Git
+
+- **Never auto-commit.** Do not run `git add` or `git commit` unless the user explicitly asks to commit.
+
+---
+
 ## What NOT to Do
 
 - Do not use `useEffect` for data fetching — use Server Components.
 - Do not add `console.log` in production code paths — use `console.error` for actual errors only.
-- Do not hardcode the portfolio Supabase URL or keys — they come from the encrypted `settings` table.
+- Do not hardcode the portfolio Supabase URL or keys — they come from `PORTFOLIO_SUPABASE_URL` and `PORTFOLIO_SUPABASE_SERVICE_ROLE_KEY` env vars.
 - Do not use `any` type — if you're reaching for `any`, stop and define the type.
 - Do not modify `components/ui/` files — they are shadcn/ui managed files.
 - Do not generate multiple parallel AI calls without rate-limit awareness — max 3 concurrent generation requests.
