@@ -1,11 +1,11 @@
 "use client"
 
-// GenerationPanel: right-side slide-in panel with three phases:
+// GenerationPanel: right-side slide-in panel with phases:
 //   setup      → model picker + generate trigger
-//   generating → progress indicator
+//   streaming  → real-time generation with stop button
 //   results    → draft previews with compare tabs + maximize editor
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { marked } from "marked"
@@ -22,6 +22,7 @@ import {
   Check,
   AlertTriangle,
   Bot,
+  Square,
 } from "lucide-react"
 import type { ModelId } from "@/lib/ai-models"
 
@@ -36,16 +37,17 @@ type Draft = {
   status: string
 }
 
-type GenerateResponse = {
-  generated: Draft[]
-  count: number
-  failures: { articleId: string; title: string; reason: string; code: string }[]
-}
-
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const MODEL_OPTIONS: { id: ModelId; label: string; provider: string; badge?: string }[] = [
-  { id: "qwen/qwen3.6-plus:free", label: "Qwen3 6B Plus", provider: "Qwen", badge: "free" },
+  { id: "qwen/qwen3.6-plus:free", label: "Qwen 3.6 Plus", provider: "Free Tier", badge: "free" },
+  { id: "google/gemma-4-26b-a4b-it", label: "Gemma 4 26B (MoE)", provider: "Google" },
+  { id: "google/gemma-4-31b-it", label: "Gemma 4 31B", provider: "Google" },
+  {
+    id: "arcee-ai/trinity-large-thinking",
+    label: "Trinity Large (Reasoning)",
+    provider: "Arcee AI",
+  },
 ]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -132,7 +134,7 @@ function DraftTab({
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-type Phase = "setup" | "generating" | "results" | "editing"
+type Phase = "setup" | "streaming" | "results" | "editing"
 
 export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
   const router = useRouter()
@@ -143,11 +145,24 @@ export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
   const [activeDraft, setActiveDraft] = useState(0)
   const [maximized, setMaximized] = useState(false)
 
+  // Streaming state
+  const [streamedContent, setStreamedContent] = useState("")
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   // Editor state (for the maximize/edit phase)
   const [editTitle, setEditTitle] = useState("")
   const [editContent, setEditContent] = useState("")
   const [editPreview, setEditPreview] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   const openPanel = () => {
     setOpen(true)
@@ -159,61 +174,154 @@ export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
     setMaximized(false)
   }
 
-  // ── generate ────────────────────────────────────────────────────────────────
+  // ── generate (streaming) ───────────────────────────────────────────────────────
 
-  const generate = useCallback(async () => {
-    setPhase("generating")
-
+  const generateStreaming = useCallback(async () => {
     try {
       // 1. Fetch selected article IDs
       const articlesRes = await fetch("/api/articles/selected")
       if (!articlesRes.ok) {
         toast.error("Failed to fetch selected articles")
-        setPhase("setup")
         return
       }
-      const { articles } = (await articlesRes.json()) as { articles: { id: string }[] }
+      const { articles } = (await articlesRes.json()) as {
+        articles: { id: string; title: string }[]
+      }
       const articleIds = articles.map((a) => a.id)
 
       if (articleIds.length === 0) {
         toast.error("No selected articles found")
-        setPhase("setup")
         return
       }
 
-      // 2. Generate drafts
-      const res = await fetch("/api/articles/selected", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ articleIds, aiModel: model }),
-      })
+      // Generate each article in sequence, streaming each one
+      const generatedDrafts: Draft[] = []
 
-      const data = (await res.json()) as GenerateResponse
+      for (const articleId of articleIds) {
+        // Reset streaming state for this article
+        setStreamedContent("")
+        setPhase("streaming")
+        try {
+          // Create abort controller for this article
+          abortControllerRef.current = new AbortController()
 
-      // Surface failures
-      if (data.failures?.length) {
-        const uniqueCodes = [...new Set(data.failures.map((f) => f.code))]
-        for (const code of uniqueCodes) {
-          const sample = data.failures.find((f) => f.code === code)!
-          const affected = data.failures.filter((f) => f.code === code)
-          const label = affected.length === 1 ? `"${sample.title}"` : `${affected.length} articles`
-          toast.error(`${label}: ${sample.reason}`, { duration: 8000 })
+          // Stream the content
+          const res = await fetch("/api/articles/generate-stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ articleId, aiModel: model }),
+            signal: abortControllerRef.current.signal,
+          })
+
+          if (!res.ok) {
+            const error = await res.json()
+            toast.error(error.error || "Generation failed")
+            continue
+          }
+
+          const reader = res.body?.getReader()
+          const decoder = new TextDecoder()
+          let fullContent = ""
+
+          if (!reader) {
+            toast.error("Failed to read stream")
+            continue
+          }
+
+          // Read and process the stream
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            const chunk = decoder.decode(value, { stream: true })
+            fullContent += chunk
+            setStreamedContent(fullContent)
+          }
+
+          // Build frontmatter
+          const titleMatch = fullContent.match(/^# (.+)$/m)
+          const title = titleMatch?.[1] || "Untitled"
+          const slug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+
+          const firstParagraphMatch = fullContent.match(/^#+.*?\n\n(.+?)(?:\n\n|$)/s)
+          const excerpt =
+            firstParagraphMatch?.[1]?.substring(0, 150).trim() || "AI-generated blog post"
+
+          const frontmatter = `---
+title: ${title}
+author: Ajay Mandal
+pubDatetime: ${new Date().toISOString()}
+slug: ${slug}
+featured: false
+draft: true
+tags:
+  - ai-generated
+description: ${excerpt}
+category: findings
+---
+
+`
+
+          const fullContentWithFrontmatter = frontmatter + fullContent
+
+          // Save the streamed content to database
+          const draftRes = await fetch("/api/generated-blogs/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              articleId,
+              contentMd: fullContentWithFrontmatter,
+              aiModel: model,
+            }),
+          })
+
+          if (!draftRes.ok) {
+            toast.error("Failed to save draft")
+            continue
+          }
+
+          const draft = (await draftRes.json()) as Draft
+          generatedDrafts.push(draft)
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            toast.info("Generation stopped")
+            setPhase("setup")
+            return
+          }
+          console.error("Stream error:", error)
+          toast.error("Generation failed for this article")
         }
       }
 
-      if (data.count > 0) {
-        setDrafts(data.generated)
+      // All done
+      if (generatedDrafts.length > 0) {
+        setDrafts(generatedDrafts)
         setActiveDraft(0)
         setPhase("results")
+        setStreamedContent("")
         router.refresh()
       } else {
         setPhase("setup")
       }
-    } catch {
+    } catch (error) {
+      console.error("Generation error:", error)
       toast.error("Generation failed — check your connection")
       setPhase("setup")
     }
   }, [model, router])
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      setPhase("setup")
+      setStreamedContent("")
+      toast.info("Generation stopped")
+    }
+  }
 
   // ── open maximize editor ─────────────────────────────────────────────────────
 
@@ -329,7 +437,7 @@ export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
               <span className="text-sm font-semibold text-white/80">
                 {phase === "setup"
                   ? "Generate Drafts"
-                  : phase === "generating"
+                  : phase === "streaming"
                     ? "Generating…"
                     : phase === "results"
                       ? `${drafts.length} Draft${drafts.length !== 1 ? "s" : ""} Generated`
@@ -393,7 +501,7 @@ export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
 
               {/* Generate button */}
               <button
-                onClick={generate}
+                onClick={generateStreaming}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500/20 py-2.5 text-sm font-medium text-blue-300 transition-all hover:bg-blue-500/30 active:scale-[0.99]"
               >
                 <Sparkles className="size-4" />
@@ -402,20 +510,42 @@ export function GenerationPanel({ selectedCount }: { selectedCount: number }) {
             </div>
           )}
 
-          {/* ── Generating phase ─────────────────────────────────────────── */}
-          {phase === "generating" && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-              <div className="relative flex size-14 items-center justify-center">
-                <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/10" />
-                <div className="relative flex size-14 items-center justify-center rounded-full bg-blue-500/10 ring-1 ring-blue-500/20">
-                  <Loader2 className="size-6 animate-spin text-blue-400" />
+          {/* ── Streaming phase ──────────────────────────────────────────── */}
+          {phase === "streaming" && (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {/* Header */}
+              <div className="shrink-0 border-b border-white/[0.04] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin text-blue-400" />
+                  <span className="text-sm font-medium text-white/70">Generating content…</span>
                 </div>
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-white/70">Generating drafts…</p>
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/40">
                   Using {MODEL_OPTIONS.find((m) => m.id === model)?.label}
                 </p>
+              </div>
+
+              {/* Live streaming content preview */}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div
+                  className="prose prose-invert prose-sm prose-headings:text-white/80 prose-p:text-white/50 prose-strong:text-white/70 prose-code:text-blue-300 max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(streamedContent),
+                  }}
+                />
+                {streamedContent && (
+                  <div className="mt-2 inline-block size-2 animate-pulse rounded-full bg-blue-400" />
+                )}
+              </div>
+
+              {/* Stop button */}
+              <div className="flex shrink-0 gap-2 border-t border-white/[0.05] px-4 py-3">
+                <button
+                  onClick={stopGeneration}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-500/20 py-2 text-xs font-medium text-red-300 transition-all hover:bg-red-500/30"
+                >
+                  <Square className="size-3.5" />
+                  Stop Generation
+                </button>
               </div>
             </div>
           )}

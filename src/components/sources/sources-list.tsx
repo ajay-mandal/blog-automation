@@ -177,7 +177,11 @@ function SourceCard({
 }: SourceCardProps) {
   const isLoading = isFetching || isDeleting || isToggling
   const lastFetchDate = source.lastFetchedAt
-    ? new Date(source.lastFetchedAt).toLocaleDateString()
+    ? new Date(source.lastFetchedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
     : "Never"
 
   return (

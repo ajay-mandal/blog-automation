@@ -9,10 +9,25 @@ const openrouter = createOpenRouter({
 
 // ModelId strings match OpenRouter's model identifiers exactly —
 // see full list at https://openrouter.ai/models
-export type ModelId = "qwen/qwen3.6-plus:free"
+export type ModelId =
+  | "qwen/qwen3.6-plus:free"
+  | "google/gemma-4-26b-a4b-it"
+  | "google/gemma-4-31b-it"
+  | "arcee-ai/trinity-large-thinking"
 
-export const AI_MODELS: Record<ModelId, { label: string; provider: string }> = {
-  "qwen/qwen3.6-plus:free": { label: "Qwen3 6B Plus", provider: "Qwen" },
+export const AI_MODELS: Record<ModelId, { label: string; provider: string; pricing?: string }> = {
+  "qwen/qwen3.6-plus:free": { label: "Qwen 3.6 Plus", provider: "Qwen", pricing: "free" },
+  "google/gemma-4-26b-a4b-it": {
+    label: "Gemma 4 26B (MoE)",
+    provider: "Google",
+    pricing: "$0.13/$0.40",
+  },
+  "google/gemma-4-31b-it": { label: "Gemma 4 31B", provider: "Google", pricing: "$0.14/$0.40" },
+  "arcee-ai/trinity-large-thinking": {
+    label: "Trinity Large (Reasoning)",
+    provider: "Arcee AI",
+    pricing: "$0.22/$0.85",
+  },
 }
 
 export const DEFAULT_MODEL: ModelId = "qwen/qwen3.6-plus:free"

@@ -90,15 +90,47 @@ Return ONLY the markdown content, starting with a level 1 heading (# Title).`
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "")
 
+        // Generate excerpt from first paragraph
+        const firstParagraphMatch = text.match(/^#+.*?\n\n(.+?)(?:\n\n|$)/s)
+        const excerpt =
+          firstParagraphMatch?.[1]?.substring(0, 150).trim() || "AI-generated blog post"
+
+        // Generate tags based on source and content
+        const tags = article.source.name
+          ? [article.source.name.toLowerCase().replace(/\s+/g, "-"), "ai-generated"]
+          : ["ai-generated"]
+
+        // Build frontmatter
+        const frontmatter = `---
+title: ${title}
+author: Ajay Mandal
+pubDatetime: ${new Date().toISOString()}
+slug: ${slug}
+featured: false
+draft: true
+tags:
+${tags.map((tag) => `  - ${tag}`).join("\n")}
+description: ${excerpt}
+category: findings
+---
+
+`
+
+        // Combine frontmatter with markdown content
+        const fullContent = frontmatter + text
+
         const draft = await prisma.generatedBlog.create({
           data: {
             articleId: article.id,
             version: 1,
             title,
             slug,
-            contentMd: text,
+            contentMd: fullContent,
+            excerpt,
+            tags,
             status: "draft",
             aiModel,
+            category: "findings",
           },
         })
         generated.push(draft)

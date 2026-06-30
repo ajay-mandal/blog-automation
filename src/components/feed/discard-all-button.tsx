@@ -21,6 +21,10 @@ export function DiscardAllButton({ selectedCount }: { selectedCount: number }) {
       }
       const { unselected } = (await res.json()) as { unselected: number }
       toast.success(`Cleared ${unselected} selection${unselected !== 1 ? "s" : ""}`)
+
+      // Notify AI panel to reload context (clear chat articles)
+      window.dispatchEvent(new CustomEvent("article-selection-changed"))
+
       router.refresh()
     } finally {
       setBusy(false)

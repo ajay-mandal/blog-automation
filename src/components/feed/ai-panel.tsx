@@ -24,6 +24,7 @@ import {
   X,
   PanelRightClose,
   PanelRightOpen,
+  Square,
 } from "lucide-react"
 import type { ModelId } from "@/lib/ai-models"
 
@@ -64,9 +65,22 @@ const MODEL_GROUPS: {
   models: { id: ModelId; label: string; badge?: string }[]
 }[] = [
   {
-    provider: "Qwen",
-    color: "text-cyan-400",
-    models: [{ id: "qwen/qwen3.6-plus:free", label: "Qwen3 6B Plus", badge: "free" }],
+    provider: "Free Tier",
+    color: "text-emerald-400",
+    models: [{ id: "qwen/qwen3.6-plus:free", label: "Qwen 3.6 Plus", badge: "free" }],
+  },
+  {
+    provider: "Google",
+    color: "text-blue-400",
+    models: [
+      { id: "google/gemma-4-26b-a4b-it", label: "Gemma 4 26B (MoE)" },
+      { id: "google/gemma-4-31b-it", label: "Gemma 4 31B" },
+    ],
+  },
+  {
+    provider: "Arcee AI",
+    color: "text-purple-400",
+    models: [{ id: "arcee-ai/trinity-large-thinking", label: "Trinity Large (Reasoning)" }],
   },
 ]
 
@@ -89,6 +103,7 @@ function modelLabel(id: string) {
 function ModelPicker({ value, onChange }: { value: ModelId; onChange: (id: ModelId) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const [dropUp, setDropUp] = useState(false)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -97,6 +112,16 @@ function ModelPicker({ value, onChange }: { value: ModelId; onChange: (id: Model
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
+
+  useEffect(() => {
+    if (!open || !ref.current) return
+
+    const rect = ref.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const dropdownHeight = 280 // approximate height of dropdown
+
+    setDropUp(spaceBelow < dropdownHeight)
+  }, [open])
 
   return (
     <div ref={ref} className="relative">
@@ -112,7 +137,11 @@ function ModelPicker({ value, onChange }: { value: ModelId; onChange: (id: Model
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1.5 w-56 rounded-xl border border-white/[0.08] bg-[#09131f] shadow-xl shadow-black/60">
+        <div
+          className={`absolute z-50 w-56 rounded-xl border border-white/[0.08] bg-[#09131f] shadow-xl shadow-black/60 ${
+            dropUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
+          }`}
+        >
           {MODEL_GROUPS.map((group) => (
             <div key={group.provider} className="py-1.5">
               <div
@@ -215,6 +244,15 @@ export function AiPanel() {
     return () => window.removeEventListener("article-selection-changed", silentReload)
   }, [loadContext, silentReload])
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (chatAbortRef.current) {
+        chatAbortRef.current.abort()
+      }
+    }
+  }, [])
+
   // ── generate / drafts
   const [isGenerating, setIsGenerating] = useState(false)
   const [drafts, setDrafts] = useState<Draft[]>([])
@@ -232,6 +270,7 @@ export function AiPanel() {
   const [isStreaming, setIsStreaming] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  const chatAbortRef = useRef<AbortController | null>(null)
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
@@ -338,6 +377,9 @@ export function AiPanel() {
     setChatInput("")
     setIsStreaming(true)
 
+    // Create abort controller for this chat request
+    chatAbortRef.current = new AbortController()
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -347,6 +389,7 @@ export function AiPanel() {
           model,
           articleIds: articles.map((a) => a.id),
         }),
+        signal: chatAbortRef.current?.signal,
       })
 
       if (!res.ok) {
@@ -391,14 +434,38 @@ export function AiPanel() {
           return updated
         })
       }
-    } catch {
-      toast.error("Chat error: Network or connection issue")
-      setMessages((prev) => prev.slice(0, -1))
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        // User stopped the stream
+        setMessages((prev) => {
+          const updated = [...prev]
+          if (
+            updated[updated.length - 1]?.role === "assistant" &&
+            !updated[updated.length - 1].content.trim()
+          ) {
+            // Remove empty assistant message if nothing was received
+            return prev.slice(0, -1)
+          }
+          return prev
+        })
+        toast.info("Chat stopped")
+      } else {
+        toast.error("Chat error: Network or connection issue")
+        setMessages((prev) => prev.slice(0, -1))
+      }
     } finally {
       setIsStreaming(false)
+      chatAbortRef.current = null
       chatInputRef.current?.focus()
     }
   }, [chatInput, isStreaming, messages, model, articles])
+
+  const stopChat = () => {
+    if (chatAbortRef.current) {
+      chatAbortRef.current.abort()
+      chatAbortRef.current = null
+    }
+  }
 
   const activeDraft = drafts[activeDraftIdx]
 
@@ -715,17 +782,23 @@ export function AiPanel() {
                 rows={2}
                 className="flex-1 resize-none rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/25 focus:border-blue-500/30 focus:bg-white/[0.06] focus:outline-none"
               />
-              <button
-                onClick={sendChat}
-                disabled={isStreaming || !chatInput.trim()}
-                className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 transition-all hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                {isStreaming ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
+              {isStreaming ? (
+                <button
+                  onClick={stopChat}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30"
+                  title="Stop chat generation"
+                >
+                  <Square className="size-3.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={sendChat}
+                  disabled={!chatInput.trim()}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 transition-all hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-30"
+                >
                   <Send className="size-3.5" />
-                )}
-              </button>
+                </button>
+              )}
             </div>
 
             {/* Model selector + Generate button row */}
